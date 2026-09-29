@@ -1,0 +1,2461 @@
+```html
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gemini Live Voice</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+    margin:0;
+    min-height:100vh;
+    font-family:Arial,sans-serif;
+    background:
+        radial-gradient(circle at 10% 10%,rgba(99,102,241,.13),transparent 30%),
+        radial-gradient(circle at 90% 20%,rgba(59,130,246,.12),transparent 30%),
+        linear-gradient(135deg,#eef2ff,#f8fafc);
+    color:#172033;
+    padding:25px 15px;
+}
+
+.page{
+    width:min(1100px,100%);
+    margin:auto;
+}
+
+.topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:22px;
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:13px;
+}
+
+.logo{
+    width:54px;
+    height:54px;
+    border-radius:17px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:27px;
+    color:white;
+    background:linear-gradient(135deg,#4f46e5,#3b82f6);
+    box-shadow:0 12px 30px rgba(79,70,229,.25);
+}
+
+.brand h1{
+    margin:0;
+    font-size:21px;
+}
+
+.brand span{
+    display:block;
+    margin-top:4px;
+    color:#64748b;
+    font-size:12px;
+}
+
+.live-badge{
+    background:#fff;
+    border:1px solid #e2e8f0;
+    border-radius:50px;
+    padding:9px 14px;
+    font-size:12px;
+    color:#475569;
+    box-shadow:0 8px 25px rgba(15,23,42,.06);
+}
+
+.live-badge::before{
+    content:"";
+    display:inline-block;
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#22c55e;
+    margin-left:7px;
+}
+
+/* LAYOUT */
+
+.layout{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 330px;
+    gap:22px;
+    align-items:start;
+}
+
+/* MAIN CARD */
+
+.card{
+    background:rgba(255,255,255,.94);
+    border:1px solid rgba(226,232,240,.9);
+    border-radius:28px;
+    padding:28px;
+    box-shadow:0 25px 70px rgba(15,23,42,.12);
+}
+
+.header{
+    display:flex;
+    align-items:center;
+    gap:15px;
+    margin-bottom:24px;
+}
+
+.header-logo{
+    width:58px;
+    height:58px;
+    border-radius:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:28px;
+    background:#eef2ff;
+}
+
+h1{
+    margin:0;
+    font-size:25px;
+}
+
+.subtitle{
+    margin-top:5px;
+    color:#64748b;
+    font-size:14px;
+}
+
+label{
+    display:block;
+    margin:15px 0 8px;
+    font-weight:bold;
+    font-size:14px;
+}
+
+.input-wrap{
+    position:relative;
+}
+
+input,select{
+    width:100%;
+    height:52px;
+    border:1px solid #dbe2ea;
+    border-radius:14px;
+    outline:none;
+    font-size:14px;
+    background:#fff;
+}
+
+input{
+    padding:0 50px 0 15px;
+    direction:ltr;
+}
+
+select{
+    padding:0 14px;
+}
+
+input:focus,select:focus{
+    border-color:#6366f1;
+    box-shadow:0 0 0 4px rgba(99,102,241,.10);
+}
+
+.show{
+    position:absolute;
+    left:10px;
+    top:50%;
+    transform:translateY(-50%);
+    border:0;
+    background:transparent;
+    cursor:pointer;
+    font-size:18px;
+}
+
+.main-button{
+    width:100%;
+    height:54px;
+    margin-top:15px;
+    border:0;
+    border-radius:15px;
+    background:linear-gradient(135deg,#4f46e5,#3b82f6);
+    color:white;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    box-shadow:0 10px 25px rgba(79,70,229,.2);
+}
+
+.main-button:hover{
+    filter:brightness(.96);
+}
+
+.main-button:disabled{
+    opacity:.5;
+    cursor:not-allowed;
+}
+
+.status{
+    margin-top:18px;
+    padding:15px;
+    border-radius:15px;
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+}
+
+.status-dot{
+    width:11px;
+    height:11px;
+    border-radius:50%;
+    background:#94a3b8;
+}
+
+.status.connected .status-dot{
+    background:#22c55e;
+    box-shadow:0 0 0 5px rgba(34,197,94,.12);
+}
+
+.status.listening .status-dot{
+    background:#f59e0b;
+    animation:pulse 1s infinite;
+}
+
+.status.speaking .status-dot{
+    background:#6366f1;
+    animation:pulse .7s infinite;
+}
+
+.status.error .status-dot{
+    background:#ef4444;
+}
+
+@keyframes pulse{
+    50%{transform:scale(1.35)}
+}
+
+/* VOICE */
+
+.voice-controls{
+    display:flex;
+    justify-content:center;
+    margin-top:25px;
+}
+
+.mic-button{
+    width:100px;
+    height:100px;
+    border:0;
+    border-radius:50%;
+    background:linear-gradient(135deg,#4f46e5,#3b82f6);
+    color:white;
+    font-size:36px;
+    cursor:pointer;
+    box-shadow:0 15px 40px rgba(79,70,229,.28);
+}
+
+.mic-button:disabled{
+    opacity:.35;
+    cursor:not-allowed;
+}
+
+.mic-button.active{
+    background:#ef4444;
+    animation:micPulse 1.4s infinite;
+}
+
+@keyframes micPulse{
+    0%,100%{
+        box-shadow:0 0 0 0 rgba(239,68,68,.35);
+    }
+    50%{
+        box-shadow:0 0 0 18px rgba(239,68,68,0);
+    }
+}
+
+/* TRANSCRIPT */
+
+.transcript{
+    margin-top:25px;
+    background:#f8fafc;
+    border-radius:17px;
+    padding:15px;
+    min-height:100px;
+    max-height:190px;
+    overflow-y:auto;
+}
+
+.message{
+    margin-bottom:10px;
+    line-height:1.5;
+    font-size:14px;
+}
+
+.you{
+    color:#475569;
+}
+
+.gemini{
+    color:#4f46e5;
+    font-weight:600;
+}
+
+/* LOGS */
+
+.logs{
+    margin-top:20px;
+    background:#0f172a;
+    border-radius:17px;
+    overflow:hidden;
+}
+
+.logs-header{
+    height:42px;
+    padding:0 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:#1e293b;
+    color:#cbd5e1;
+    font-size:13px;
+}
+
+.clear{
+    border:0;
+    background:transparent;
+    color:#94a3b8;
+    cursor:pointer;
+}
+
+.log-box{
+    height:250px;
+    overflow-y:auto;
+    padding:12px;
+    direction:ltr;
+    text-align:left;
+    font-family:Consolas,monospace;
+    font-size:11px;
+    color:#cbd5e1;
+}
+
+.log{
+    margin-bottom:7px;
+    line-height:1.45;
+    word-break:break-word;
+}
+
+.time{
+    color:#64748b;
+}
+
+.ok{color:#86efac}
+.info{color:#93c5fd}
+.warn{color:#fde68a}
+.err{color:#fca5a5}
+.raw{color:#c4b5fd}
+
+/* INSTRUCTIONS */
+
+.instructions{
+    position:sticky;
+    top:20px;
+}
+
+.instructions-card{
+    background:rgba(255,255,255,.94);
+    border:1px solid rgba(226,232,240,.9);
+    border-radius:24px;
+    padding:23px;
+    box-shadow:0 20px 55px rgba(15,23,42,.10);
+}
+
+.instructions-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+}
+
+.instructions-icon{
+    width:40px;
+    height:40px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#eef2ff;
+    font-size:19px;
+}
+
+.instructions-title h2{
+    margin:0;
+    font-size:18px;
+}
+
+.instructions-title span{
+    display:block;
+    color:#64748b;
+    font-size:11px;
+    margin-top:3px;
+}
+
+.api-button{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    width:100%;
+    height:50px;
+    border-radius:14px;
+    text-decoration:none;
+    color:white;
+    background:linear-gradient(135deg,#4f46e5,#3b82f6);
+    font-size:14px;
+    font-weight:bold;
+    box-shadow:0 10px 25px rgba(79,70,229,.20);
+    transition:.2s;
+}
+
+.api-button:hover{
+    transform:translateY(-2px);
+}
+
+.steps{
+    margin-top:22px;
+}
+
+.step{
+    display:flex;
+    gap:11px;
+    margin-bottom:19px;
+}
+
+.step-number{
+    flex:0 0 29px;
+    width:29px;
+    height:29px;
+    border-radius:9px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#eef2ff;
+    color:#4f46e5;
+    font-size:12px;
+    font-weight:bold;
+}
+
+.step-content strong{
+    display:block;
+    font-size:13px;
+    margin-bottom:4px;
+}
+
+.step-content span{
+    display:block;
+    color:#64748b;
+    font-size:11px;
+    line-height:1.55;
+}
+
+.tip{
+    margin-top:4px;
+    padding:13px;
+    border-radius:13px;
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    color:#64748b;
+    font-size:11px;
+    line-height:1.6;
+}
+
+.tip strong{
+    color:#334155;
+}
+
+/* FEATURES */
+
+.features{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    margin-top:15px;
+}
+
+.feature{
+    padding:15px;
+    border:1px solid #e2e8f0;
+    border-radius:15px;
+    background:#fff;
+}
+
+.feature-icon{
+    font-size:19px;
+    margin-bottom:7px;
+}
+
+.feature strong{
+    display:block;
+    font-size:12px;
+}
+
+.feature span{
+    display:block;
+    color:#64748b;
+    font-size:10px;
+    line-height:1.5;
+    margin-top:3px;
+}
+
+.footer{
+    margin-top:15px;
+    text-align:center;
+    color:#94a3b8;
+    font-size:11px;
+}
+
+/* MOBILE */
+
+@media(max-width:850px){
+
+    body{
+        padding:15px 10px;
+    }
+
+    .layout{
+        grid-template-columns:1fr;
+    }
+
+    .instructions{
+        position:static;
+        order:-1;
+    }
+
+    .topbar{
+        margin-bottom:15px;
+    }
+
+    .live-badge{
+        display:none;
+    }
+
+    .card{
+        padding:20px;
+        border-radius:22px;
+    }
+
+    .features{
+        grid-template-columns:1fr;
+    }
+}
+
+@media(max-width:480px){
+
+    .brand h1{
+        font-size:18px;
+    }
+
+    .brand span{
+        font-size:10px;
+    }
+
+    .header h1{
+        font-size:22px;
+    }
+
+    .instructions-card{
+        padding:19px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="page">
+
+    <div class="topbar">
+
+        <div class="brand">
+
+            <div class="logo">✦</div>
+
+            <div>
+                <h1>Gemini Live</h1>
+                <span>שיחה קולית דו־כיוונית בזמן אמת</span>
+            </div>
+
+        </div>
+
+        <div class="live-badge">
+            Gemini Live
+        </div>
+
+    </div>
+
+
+    <div class="layout">
+
+        <!-- MAIN -->
+
+        <div>
+
+            <div class="card">
+
+                <div class="header">
+
+                    <div class="header-logo">
+                        🎙️
+                    </div>
+
+                    <div>
+                        <h1>התחברות ל־Gemini Live</h1>
+
+                        <div class="subtitle">
+                            הזינו מפתח API והתחילו שיחה קולית בזמן אמת
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <label for="apiKey">
+                    Gemini API Key
+                </label>
+
+                <div class="input-wrap">
+
+                    <input
+                        id="apiKey"
+                        type="password"
+                        placeholder="AIza..."
+                        autocomplete="off"
+                    >
+
+                    <button
+                        class="show"
+                        onclick="toggleKey()"
+                        title="הצג / הסתר"
+                    >👁</button>
+
+                </div>
+
+
+                <label for="model">
+                    מודל Live
+                </label>
+
+                <select id="model">
+
+                    <option value="gemini-3.1-flash-live-preview">
+                        gemini-3.1-flash-live-preview
+                    </option>
+
+                    <option value="gemini-3.8-live">
+                        gemini-3.8-live
+                    </option>
+
+                </select>
+
+
+                <button
+                    id="testButton"
+                    class="main-button"
+                    onclick="testConnection()"
+                >
+                    בדיקת חיבור
+                </button>
+
+
+                <div
+                    id="status"
+                    class="status"
+                >
+
+                    <span class="status-dot"></span>
+
+                    <span id="statusText">
+                        ממתין למפתח API
+                    </span>
+
+                </div>
+
+
+                <div class="voice-controls">
+
+                    <button
+                        id="micButton"
+                        class="mic-button"
+                        onclick="toggleLive()"
+                        disabled
+                    >
+                        🎙️
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="transcript"
+                    class="transcript"
+                >
+
+                    <div class="message">
+                        הזן מפתח API ובצע בדיקת חיבור.
+                    </div>
+
+                </div>
+
+
+                <div class="logs">
+
+                    <div class="logs-header">
+
+                        <span>🖥 לוגים</span>
+
+                        <button
+                            class="clear"
+                            onclick="clearLogs()"
+                        >
+                            נקה
+                        </button>
+
+                    </div>
+
+                    <div
+                        id="logBox"
+                        class="log-box"
+                    ></div>
+
+                </div>
+
+            </div>
+
+
+            <div class="features">
+
+                <div class="feature">
+
+                    <div class="feature-icon">
+                        🎙️
+                    </div>
+
+                    <strong>
+                        שיחה קולית
+                    </strong>
+
+                    <span>
+                        שיחה דו־כיוונית בזמן אמת.
+                    </span>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-icon">
+                        ⚡
+                    </div>
+
+                    <strong>
+                        Live
+                    </strong>
+
+                    <span>
+                        חיבור ישיר לממשק Live.
+                    </span>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-icon">
+                        🔑
+                    </div>
+
+                    <strong>
+                        API Key
+                    </strong>
+
+                    <span>
+                        הזנת המפתח ישירות בדפדפן.
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- INSTRUCTIONS -->
+
+        <aside class="instructions">
+
+            <div class="instructions-card">
+
+                <div class="instructions-title">
+
+                    <div class="instructions-icon">
+                        📘
+                    </div>
+
+                    <div>
+                        <h2>איך מתחילים?</h2>
+                        <span>הכנת המפתח בכמה צעדים</span>
+                    </div>
+
+                </div>
+
+
+                <a
+                    class="api-button"
+                    href="https://aistudio.google.com/apikey"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    🔑 יצירת מפתח API
+                </a>
+
+
+                <div class="steps">
+
+                    <div class="step">
+
+                        <div class="step-number">
+                            1
+                        </div>
+
+                        <div class="step-content">
+
+                            <strong>
+                                פותחים את Google AI Studio
+                            </strong>
+
+                            <span>
+                                לחצו על הכפתור למעלה כדי לפתוח
+                                את עמוד מפתחות ה־API.
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="step">
+
+                        <div class="step-number">
+                            2
+                        </div>
+
+                        <div class="step-content">
+
+                            <strong>
+                                מתחברים לחשבון Google
+                            </strong>
+
+                            <span>
+                                התחברו לחשבון Google שלכם
+                                אם אתם עדיין לא מחוברים.
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="step">
+
+                        <div class="step-number">
+                            3
+                        </div>
+
+                        <div class="step-content">
+
+                            <strong>
+                                יוצרים API Key
+                            </strong>
+
+                            <span>
+                                לחצו על יצירת מפתח חדש ופעלו
+                                לפי ההוראות שמופיעות באתר.
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="step">
+
+                        <div class="step-number">
+                            4
+                        </div>
+
+                        <div class="step-content">
+
+                            <strong>
+                                מעתיקים את המפתח
+                            </strong>
+
+                            <span>
+                                העתיקו את המפתח והדביקו אותו
+                                בשדה Gemini API Key.
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="step">
+
+                        <div class="step-number">
+                            5
+                        </div>
+
+                        <div class="step-content">
+
+                            <strong>
+                                בודקים את החיבור
+                            </strong>
+
+                            <span>
+                                לחצו על „בדיקת חיבור”.
+                                לאחר שהחיבור מצליח, ניתן
+                                להפעיל את המיקרופון.
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="tip">
+
+                    🔒 <strong>טיפ:</strong>
+                    אל תשתפו את מפתח ה־API שלכם עם אחרים.
+                    אם זה דף ציבורי, מומלץ להשתמש בפתרון
+                    שרת מתאים ולא לחשוף מפתח קבוע בדפדפן.
+
+                </div>
+
+            </div>
+
+        </aside>
+
+    </div>
+
+
+    <div class="footer">
+        Gemini Live • WebSocket • PCM 16kHz / 24kHz
+    </div>
+
+</div>
+
+
+<script>
+
+const WS_ENDPOINT =
+    "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
+
+const INPUT_RATE = 16000;
+const OUTPUT_RATE = 24000;
+
+let apiKey = "";
+let websocket = null;
+
+let microphoneStream = null;
+let audioContext = null;
+let microphoneSource = null;
+let processor = null;
+let silentGain = null;
+
+let isLive = false;
+let connectionReady = false;
+
+let nextPlayTime = 0;
+
+
+/* =========================================================
+   LOG
+========================================================= */
+
+function log(message,type="info"){
+
+    const box =
+        document.getElementById("logBox");
+
+    const time =
+        new Date().toLocaleTimeString(
+            "he-IL",
+            {hour12:false}
+        );
+
+    const div =
+        document.createElement("div");
+
+    div.className =
+        "log " + type;
+
+    div.innerHTML =
+        `<span class="time">[${time}]</span> ` +
+        escapeHtml(message);
+
+    box.appendChild(div);
+
+    box.scrollTop =
+        box.scrollHeight;
+
+    console.log(message);
+}
+
+
+function rawLog(message){
+
+    const box =
+        document.getElementById("logBox");
+
+    const div =
+        document.createElement("div");
+
+    div.className =
+        "log raw";
+
+    div.textContent =
+        message;
+
+    box.appendChild(div);
+
+    box.scrollTop =
+        box.scrollHeight;
+
+    console.log(message);
+}
+
+
+function clearLogs(){
+
+    document.getElementById(
+        "logBox"
+    ).innerHTML="";
+
+    log(
+        "הלוגים נוקו",
+        "info"
+    );
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function setStatus(text,type=""){
+
+    document
+        .getElementById("status")
+        .className =
+        "status " + type;
+
+    document
+        .getElementById("statusText")
+        .textContent =
+        text;
+}
+
+
+/* =========================================================
+   KEY
+========================================================= */
+
+function toggleKey(){
+
+    const input =
+        document.getElementById("apiKey");
+
+    input.type =
+        input.type === "password"
+            ? "text"
+            : "password";
+}
+
+
+/* =========================================================
+   MODEL
+========================================================= */
+
+function getModel(){
+
+    return document
+        .getElementById("model")
+        .value;
+}
+
+
+/* =========================================================
+   TEST
+========================================================= */
+
+async function testConnection(){
+
+    const key =
+        document
+            .getElementById("apiKey")
+            .value
+            .trim();
+
+    if(!key){
+
+        setStatus(
+            "יש להזין API Key",
+            "error"
+        );
+
+        log(
+            "לא הוזן API Key",
+            "err"
+        );
+
+        return;
+    }
+
+    apiKey = key;
+
+    const model =
+        getModel();
+
+    const button =
+        document.getElementById(
+            "testButton"
+        );
+
+    const mic =
+        document.getElementById(
+            "micButton"
+        );
+
+    button.disabled = true;
+    mic.disabled = true;
+
+    setStatus(
+        "מתחבר ל-Gemini Live...",
+        ""
+    );
+
+    log(
+        "--------------------------------"
+    );
+
+    log(
+        "מתחיל בדיקת חיבור ל-Gemini Live",
+        "info"
+    );
+
+    log(
+        "מודל: " + model,
+        "info"
+    );
+
+    try{
+
+        await connectLive();
+
+        connectionReady = true;
+
+        mic.disabled = false;
+        button.disabled = false;
+
+        setStatus(
+            "החיבור הצליח — Live מוכן",
+            "connected"
+        );
+
+        log(
+            "✅ setupComplete התקבל",
+            "ok"
+        );
+
+        closeWebSocket();
+
+    }catch(error){
+
+        button.disabled = false;
+        mic.disabled = true;
+
+        connectionReady = false;
+
+        log(
+            "❌ בדיקת החיבור נכשלה",
+            "err"
+        );
+
+        log(
+            error.message,
+            "err"
+        );
+
+        setStatus(
+            error.message,
+            "error"
+        );
+    }
+}
+
+
+/* =========================================================
+   CONNECT
+========================================================= */
+
+function connectLive(){
+
+    return new Promise(
+        (resolve,reject)=>{
+
+            const model =
+                getModel();
+
+            let settled = false;
+
+            const url =
+                WS_ENDPOINT +
+                "?key=" +
+                encodeURIComponent(
+                    apiKey
+                );
+
+            log(
+                "פותח WebSocket...",
+                "info"
+            );
+
+            log(
+                "URL: " +
+                WS_ENDPOINT +
+                "?key=***",
+                "info"
+            );
+
+            websocket =
+                new WebSocket(url);
+
+
+            const timeout =
+                setTimeout(()=>{
+
+                    if(!settled){
+
+                        settled=true;
+
+                        try{
+                            websocket.close();
+                        }catch{}
+
+                        reject(
+                            new Error(
+                                "Timeout: לא התקבל setupComplete"
+                            )
+                        );
+                    }
+
+                },15000);
+
+
+            websocket.binaryType =
+                "arraybuffer";
+
+
+            websocket.onopen = ()=>{
+
+                log(
+                    "WebSocket התחבר",
+                    "ok"
+                );
+
+                const setupMessage = {
+
+                    setup: {
+
+                        model:
+                            "models/" + model,
+
+                        generationConfig: {
+
+                            responseModalities:
+                                ["AUDIO"],
+
+                            temperature:
+                                0.7
+
+                        },
+
+                        systemInstruction: {
+
+                            parts:[
+
+                                {
+                                    text:
+                                        "You are a helpful real-time voice assistant. Answer naturally and concisely. Respond in the same language the user speaks."
+                                }
+
+                            ]
+
+                        },
+
+                        inputAudioTranscription:{},
+
+                        outputAudioTranscription:{}
+
+                    }
+
+                };
+
+
+                log(
+                    "שולח setup...",
+                    "info"
+                );
+
+                rawLog(
+                    "OUT → " +
+                    JSON.stringify(
+                        setupMessage
+                    )
+                );
+
+                websocket.send(
+                    JSON.stringify(
+                        setupMessage
+                    )
+                );
+
+            };
+
+
+            websocket.onmessage =
+                async(event)=>{
+
+                    try{
+
+                        const text =
+                            await readWebSocketData(
+                                event.data
+                            );
+
+                        rawLog(
+                            "IN ← " +
+                            text.substring(
+                                0,
+                                1500
+                            )
+                        );
+
+                        const message =
+                            JSON.parse(text);
+
+                        handleMessage(
+                            message,
+                            ()=>{
+                                clearTimeout(
+                                    timeout
+                                );
+
+                                if(!settled){
+
+                                    settled=true;
+                                    resolve();
+
+                                }
+                            },
+                            error=>{
+
+                                clearTimeout(
+                                    timeout
+                                );
+
+                                if(!settled){
+
+                                    settled=true;
+                                    reject(error);
+
+                                }
+
+                            }
+                        );
+
+                    }catch(error){
+
+                        log(
+                            "שגיאה בפענוח הודעת WebSocket: " +
+                            error.message,
+                            "err"
+                        );
+
+                    }
+
+                };
+
+
+            websocket.onerror =
+                error=>{
+
+                    log(
+                        "WebSocket error",
+                        "err"
+                    );
+
+                    rawLog(
+                        "WebSocket error event: " +
+                        String(error)
+                    );
+
+                };
+
+
+            websocket.onclose =
+                event=>{
+
+                    clearTimeout(
+                        timeout
+                    );
+
+                    log(
+                        "WebSocket נסגר: code=" +
+                        event.code +
+                        (
+                            event.reason
+                                ? " reason=" +
+                                  event.reason
+                                : ""
+                        ),
+                        event.code === 1000
+                            ? "warn"
+                            : "err"
+                    );
+
+                    if(!settled){
+
+                        settled=true;
+
+                        reject(
+                            new Error(
+                                "WebSocket נסגר לפני setupComplete. code=" +
+                                event.code +
+                                (
+                                    event.reason
+                                        ? " " +
+                                          event.reason
+                                        : ""
+                                )
+                            )
+                        );
+
+                    }
+
+                };
+
+        }
+    );
+}
+
+
+/* =========================================================
+   READ BROWSER WEBSOCKET DATA
+========================================================= */
+
+async function readWebSocketData(data){
+
+    if(data instanceof Blob){
+
+        log(
+            "התקבלה הודעת Blob — ממיר ל-Text",
+            "info"
+        );
+
+        return await data.text();
+    }
+
+    if(data instanceof ArrayBuffer){
+
+        log(
+            "התקבלה הודעת ArrayBuffer — ממיר ל-Text",
+            "info"
+        );
+
+        return new TextDecoder()
+            .decode(data);
+    }
+
+    if(
+        data &&
+        data.buffer instanceof ArrayBuffer
+    ){
+
+        return new TextDecoder()
+            .decode(
+                new Uint8Array(
+                    data.buffer
+                )
+            );
+
+    }
+
+    return String(data);
+}
+
+
+/* =========================================================
+   HANDLE SERVER MESSAGE
+========================================================= */
+
+function handleMessage(
+    message,
+    onReady,
+    onError
+){
+
+    if(
+        message.error
+    ){
+
+        const code =
+            Number(
+                message.error.code || 0
+            );
+
+        const error =
+            new Error(
+                message.error.message ||
+                "Gemini API error"
+            );
+
+        error.code =
+            code;
+
+        log(
+            "Google Error " +
+            code +
+            ": " +
+            error.message,
+            "err"
+        );
+
+        onError(error);
+
+        return;
+    }
+
+
+    if(
+        message.setupComplete
+    ){
+
+        log(
+            "✅ התקבל setupComplete",
+            "ok"
+        );
+
+        connectionReady=true;
+
+        onReady();
+
+        return;
+    }
+
+
+    if(
+        message.serverContent
+    ){
+
+        handleServerContent(
+            message.serverContent
+        );
+
+        return;
+    }
+
+
+    if(
+        message.usageMetadata
+    ){
+
+        log(
+            "Usage Metadata: " +
+            JSON.stringify(
+                message.usageMetadata
+            ),
+            "info"
+        );
+
+    }
+
+
+    if(
+        message.goAway
+    ){
+
+        log(
+            "Google שלחה GoAway: " +
+            JSON.stringify(
+                message.goAway
+            ),
+            "warn"
+        );
+
+    }
+
+
+    if(
+        message.sessionResumptionUpdate
+    ){
+
+        log(
+            "Session resumption update התקבל",
+            "info"
+        );
+
+    }
+
+
+    if(
+        !message.setupComplete &&
+        !message.serverContent &&
+        !message.error &&
+        !message.usageMetadata &&
+        !message.goAway &&
+        !message.sessionResumptionUpdate
+    ){
+
+        log(
+            "התקבלה הודעה לא מוכרת",
+            "warn"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   SERVER CONTENT
+========================================================= */
+
+function handleServerContent(
+    content
+){
+
+    if(
+        content.inputTranscription
+    ){
+
+        const text =
+            content
+                .inputTranscription
+                .text;
+
+        if(text){
+
+            addMessage(
+                "you",
+                "אתה",
+                text
+            );
+
+        }
+
+    }
+
+
+    if(
+        content.outputTranscription
+    ){
+
+        const text =
+            content
+                .outputTranscription
+                .text;
+
+        if(text){
+
+            addMessage(
+                "gemini",
+                "Gemini",
+                text
+            );
+
+        }
+
+    }
+
+
+    if(
+        content.modelTurn &&
+        content.modelTurn.parts
+    ){
+
+        setStatus(
+            "Gemini מדבר...",
+            "speaking"
+        );
+
+        for(
+            const part
+            of content.modelTurn.parts
+        ){
+
+            if(
+                part.inlineData &&
+                part.inlineData.data
+            ){
+
+                playPCM(
+                    part.inlineData.data,
+                    part.inlineData.mimeType
+                );
+
+            }
+
+        }
+
+    }
+
+
+    if(
+        content.interrupted
+    ){
+
+        log(
+            "Gemini הופסק",
+            "info"
+        );
+
+        stopAudioPlayback();
+
+        if(isLive){
+
+            setStatus(
+                "מאזין...",
+                "listening"
+            );
+
+        }
+
+    }
+
+
+    if(
+        content.generationComplete
+    ){
+
+        log(
+            "generationComplete",
+            "info"
+        );
+
+    }
+
+
+    if(
+        content.turnComplete
+    ){
+
+        if(isLive){
+
+            setStatus(
+                "מאזין...",
+                "listening"
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   START LIVE
+========================================================= */
+
+async function startLive(){
+
+    try{
+
+        setStatus(
+            "מתחבר...",
+            ""
+        );
+
+        log(
+            "מתחיל שיחת Live...",
+            "info"
+        );
+
+        await connectLive();
+
+        await startMicrophone();
+
+        isLive=true;
+
+        const mic =
+            document.getElementById(
+                "micButton"
+            );
+
+        mic.disabled=false;
+
+        mic.classList.add(
+            "active"
+        );
+
+        mic.textContent="⏹";
+
+        setStatus(
+            "מאזין...",
+            "listening"
+        );
+
+        log(
+            "🎙️ השיחה פעילה",
+            "ok"
+        );
+
+    }catch(error){
+
+        log(
+            "❌ לא ניתן להתחיל שיחה",
+            "err"
+        );
+
+        log(
+            error.message,
+            "err"
+        );
+
+        stopLive();
+
+        setStatus(
+            error.message,
+            "error"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   TOGGLE
+========================================================= */
+
+async function toggleLive(){
+
+    if(isLive){
+
+        stopLive();
+
+    }else{
+
+        await startLive();
+
+    }
+
+}
+
+
+/* =========================================================
+   MICROPHONE
+========================================================= */
+
+async function startMicrophone(){
+
+    if(!websocket ||
+       websocket.readyState !== WebSocket.OPEN){
+
+        throw new Error(
+            "WebSocket אינו פתוח"
+        );
+
+    }
+
+    log(
+        "מבקש הרשאת מיקרופון...",
+        "info"
+    );
+
+    microphoneStream =
+        await navigator
+            .mediaDevices
+            .getUserMedia({
+
+                audio:{
+                    channelCount:1,
+                    echoCancellation:true,
+                    noiseSuppression:true,
+                    autoGainControl:true
+                }
+
+            });
+
+
+    log(
+        "הרשאת מיקרופון התקבלה",
+        "ok"
+    );
+
+
+    audioContext =
+        new AudioContext();
+
+
+    await audioContext.resume();
+
+
+    microphoneSource =
+        audioContext
+            .createMediaStreamSource(
+                microphoneStream
+            );
+
+
+    processor =
+        audioContext
+            .createScriptProcessor(
+                2048,
+                1,
+                1
+            );
+
+
+    processor.onaudioprocess =
+        event=>{
+
+            if(
+                !websocket ||
+                websocket.readyState !==
+                WebSocket.OPEN
+            ){
+                return;
+            }
+
+            const input =
+                event.inputBuffer
+                    .getChannelData(0);
+
+
+            const pcm =
+                downsample(
+                    input,
+                    audioContext.sampleRate,
+                    INPUT_RATE
+                );
+
+
+            const base64 =
+                pcmToBase64(
+                    pcm
+                );
+
+
+            websocket.send(
+                JSON.stringify({
+
+                    realtimeInput:{
+
+                        audio:{
+
+                            data:base64,
+
+                            mimeType:
+                                "audio/pcm;rate=16000"
+
+                        }
+
+                    }
+
+                })
+            );
+
+        };
+
+
+    microphoneSource.connect(
+        processor
+    );
+
+
+    silentGain =
+        audioContext
+            .createGain();
+
+
+    silentGain.gain.value=0;
+
+
+    processor.connect(
+        silentGain
+    );
+
+
+    silentGain.connect(
+        audioContext.destination
+    );
+
+}
+
+
+/* =========================================================
+   DOWNSAMPLE
+========================================================= */
+
+function downsample(
+    input,
+    inputRate,
+    outputRate
+){
+
+    const ratio =
+        inputRate /
+        outputRate;
+
+    const length =
+        Math.round(
+            input.length /
+            ratio
+        );
+
+    const output =
+        new Int16Array(
+            length
+        );
+
+    let offset=0;
+
+    for(
+        let i=0;
+        i<length;
+        i++
+    ){
+
+        const start =
+            Math.floor(
+                i * ratio
+            );
+
+        const end =
+            Math.min(
+                Math.floor(
+                    (i+1)*ratio
+                ),
+                input.length
+            );
+
+        let sum=0;
+        let count=0;
+
+        for(
+            let j=start;
+            j<end;
+            j++
+        ){
+
+            sum+=input[j];
+            count++;
+
+        }
+
+        const sample =
+            count
+                ? sum/count
+                : 0;
+
+        output[offset++] =
+            Math.max(
+                -32768,
+                Math.min(
+                    32767,
+                    sample*32767
+                )
+            );
+
+    }
+
+    return output;
+}
+
+
+/* =========================================================
+   PCM BASE64
+========================================================= */
+
+function pcmToBase64(pcm){
+
+    const bytes =
+        new Uint8Array(
+            pcm.buffer
+        );
+
+    let binary="";
+
+    const chunk=0x8000;
+
+    for(
+        let i=0;
+        i<bytes.length;
+        i+=chunk
+    ){
+
+        binary +=
+            String.fromCharCode(
+                ...bytes.subarray(
+                    i,
+                    Math.min(
+                        i+chunk,
+                        bytes.length
+                    )
+                )
+            );
+
+    }
+
+    return btoa(binary);
+}
+
+
+/* =========================================================
+   AUDIO OUTPUT
+========================================================= */
+
+async function playPCM(
+    base64,
+    mimeType
+){
+
+    if(!audioContext){
+
+        audioContext =
+            new AudioContext();
+
+    }
+
+    await audioContext.resume();
+
+
+    const binary =
+        atob(base64);
+
+    const bytes =
+        new Uint8Array(
+            binary.length
+        );
+
+
+    for(
+        let i=0;
+        i<binary.length;
+        i++
+    ){
+
+        bytes[i] =
+            binary.charCodeAt(i);
+
+    }
+
+
+    const samples =
+        new Int16Array(
+            bytes.buffer
+        );
+
+
+    const buffer =
+        audioContext.createBuffer(
+            1,
+            samples.length,
+            OUTPUT_RATE
+        );
+
+
+    const channel =
+        buffer.getChannelData(0);
+
+
+    for(
+        let i=0;
+        i<samples.length;
+        i++
+    ){
+
+        channel[i] =
+            samples[i]/32768;
+
+    }
+
+
+    const source =
+        audioContext
+            .createBufferSource();
+
+
+    source.buffer=buffer;
+
+    source.connect(
+        audioContext.destination
+    );
+
+
+    const now =
+        audioContext.currentTime;
+
+
+    if(
+        nextPlayTime < now
+    ){
+
+        nextPlayTime=now;
+
+    }
+
+
+    source.start(
+        nextPlayTime
+    );
+
+
+    nextPlayTime +=
+        buffer.duration;
+
+}
+
+
+/* =========================================================
+   STOP AUDIO
+========================================================= */
+
+function stopAudioPlayback(){
+
+    if(audioContext){
+
+        nextPlayTime =
+            audioContext.currentTime;
+
+    }
+
+}
+
+
+/* =========================================================
+   STOP LIVE
+========================================================= */
+
+function stopLive(){
+
+    isLive=false;
+    connectionReady=false;
+
+
+    if(processor){
+
+        try{
+            processor.disconnect();
+        }catch{}
+
+        processor=null;
+
+    }
+
+
+    if(microphoneSource){
+
+        try{
+            microphoneSource.disconnect();
+        }catch{}
+
+        microphoneSource=null;
+
+    }
+
+
+    if(silentGain){
+
+        try{
+            silentGain.disconnect();
+        }catch{}
+
+        silentGain=null;
+
+    }
+
+
+    if(microphoneStream){
+
+        microphoneStream
+            .getTracks()
+            .forEach(
+                track=>track.stop()
+            );
+
+        microphoneStream=null;
+
+    }
+
+
+    closeWebSocket();
+
+    stopAudioPlayback();
+
+
+    const mic =
+        document.getElementById(
+            "micButton"
+        );
+
+    mic.classList.remove(
+        "active"
+    );
+
+    mic.textContent="🎙️";
+
+
+    setStatus(
+        "השיחה הופסקה",
+        ""
+    );
+
+    log(
+        "השיחה הופסקה",
+        "ok"
+    );
+
+}
+
+
+/* =========================================================
+   CLOSE
+========================================================= */
+
+function closeWebSocket(){
+
+    if(websocket){
+
+        try{
+
+            websocket.close(
+                1000,
+                "Closed by client"
+            );
+
+        }catch{}
+
+        websocket=null;
+
+    }
+
+}
+
+
+/* =========================================================
+   TRANSCRIPT
+========================================================= */
+
+function addMessage(
+    type,
+    name,
+    text
+){
+
+    const container =
+        document.getElementById(
+            "transcript"
+        );
+
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.className =
+        "message " + type;
+
+
+    div.innerHTML =
+        "<strong>" +
+        escapeHtml(name) +
+        ":</strong> " +
+        escapeHtml(text);
+
+
+    container.appendChild(
+        div
+    );
+
+
+    container.scrollTop =
+        container.scrollHeight;
+
+}
+
+
+/* =========================================================
+   ESCAPE
+========================================================= */
+
+function escapeHtml(text){
+
+    return String(text)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+
+}
+
+
+/* =========================================================
+   INIT
+========================================================= */
+
+log(
+    "Gemini Live Voice נטען",
+    "ok"
+);
+
+log(
+    "WebSocket Live API מוכן",
+    "info"
+);
+
+log(
+    "הודעות Blob / ArrayBuffer נתמכות",
+    "info"
+);
+
+log(
+    "בדיקת מפתח מתבצעת באמצעות חיבור Live",
+    "info"
+);
+
+log(
+    "מוכן לבדיקה",
+    "info"
+);
+
+</script>
+
+</body>
+</html>
+```
